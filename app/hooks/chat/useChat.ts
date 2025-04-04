@@ -134,7 +134,7 @@ const useChat = (chatId: string) => {
       mcpTools,
       onUpdate: (responseContent: ResponseContent) => {
         const now = Date.now();
-        // if (now - lastUpdate < 80) return; // 如果距离上次更新小于 50ms，则不更新
+        if (now - lastUpdate < 60) return; // 如果距离上次更新小于 60ms，则不更新
         setResponseMessage(responseContent);
         lastUpdate = now;
       },
@@ -145,6 +145,9 @@ const useChat = (chatId: string) => {
           chatId: chatId,
           content: responseContent.content,
           reasoninContent: responseContent.reasoning_content,
+          inputTokens: responseContent.inputTokens,
+          outputTokens: responseContent.outputTokens,
+          totalTokens: responseContent.totalTokens,
           mcpTools: responseContent.mcpTools,
           providerId: currentModel.provider.id,
           model: currentModel.id,
