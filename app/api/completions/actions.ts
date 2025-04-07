@@ -20,40 +20,82 @@ type UsageDetail = {
   totalTokens: number,
 }
 
-export const isUserWithinQuota = async (userId: string): Promise<boolean> => {
+export const isUserWithinQuota = async (userId: string, providerId: string, modelId: string):
+  Promise<{ tokenPassFlag: boolean, modelPassFlag: boolean }> => {
   const result = await db.query.users.findFirst({
     where: eq(users.id, userId),
     with: {
       group: {
         columns: {
           tokenLimitType: true,
-          dailyTokenLimit: true,
+          monthlyTokenLimit: true,
+          modelType: true,
+        },
+        with: {
+          models: {
+            with: {
+              model: {
+                columns: {
+                  name: true,
+                  providerId: true,
+                }
+              }
+            }
+          }
         }
       }
     }
-  });
-  if (result && result.group) {
-    const { tokenLimitType, dailyTokenLimit } = result.group;
-    const dailyTokenLimitNumber = dailyTokenLimit || 0;
-    if (tokenLimitType === 'unlimited') {
-      return true;
-    } else {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+  }) as {
+    group: {
+      modelType: 'all' | 'specific',
+      tokenLimitType: 'unlimited' | 'limited',
+      monthlyTokenLimit: number | null,
+      models?: { model: { name: string, providerId: string } }[]
+    } | null,
+    usageUpdatedAt: Date,
+    currentMonthTotalTokens: number
+  } | null;
 
-      let realTodayTotalTokens = 0;
-      if (result.usageUpdatedAt > today) {
-        realTodayTotalTokens = result.todayTotalTokens;
+  let tokenPassFlag = false;
+  let modelPassFlag = false;
+
+  if (result && result.group) {
+    const { tokenLimitType, monthlyTokenLimit } = result.group;
+    const monthlyTokenLimitNumber = monthlyTokenLimit || 0;
+    if (tokenLimitType === 'unlimited') {
+      tokenPassFlag = true;
+    } else {
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+
+      let realMonthlyTotalTokens = 0;
+      if (result.usageUpdatedAt > firstDayOfMonth) {
+        realMonthlyTotalTokens = result.currentMonthTotalTokens;
       }
 
-      if (realTodayTotalTokens < dailyTokenLimitNumber) {
-        return true;
+      if (realMonthlyTotalTokens < monthlyTokenLimitNumber) {
+        tokenPassFlag = true;
       } else {
-        return false;
+        tokenPassFlag = false;
       }
     }
+
+    if (result.group.modelType === 'all') {
+      modelPassFlag = true;
+    } else {
+      const hasMatchingModel = result.group.models?.some(
+        (groupModel) =>
+          groupModel.model.providerId === providerId &&
+          groupModel.model.name === modelId
+      );
+      modelPassFlag = hasMatchingModel || false;
+    }
   } else {
-    return false;
+    tokenPassFlag = false;
+  }
+  return {
+    tokenPassFlag,
+    modelPassFlag,
   }
 }
 
@@ -82,18 +124,30 @@ export const updateUserUsage = async (userId: string, usage: UsageType) => {
   // 获取今天0点的时间
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
 
-  if (userDetail?.usageUpdatedAt && new Date(userDetail.usageUpdatedAt) < today) {
-    // 如果最后更新时间早于今天0点，重置计数
+  if (userDetail?.usageUpdatedAt && new Date(userDetail.usageUpdatedAt) < firstDayOfMonth) {
+    // 如果最后更新时间早于本月 1 日 0点，重置计数
     await db.update(users).set({
       todayTotalTokens: usage.totalTokens,
+      currentMonthTotalTokens: usage.totalTokens,
+      usageUpdatedAt: new Date(),
+    })
+      .where(eq(users.id, userId));
+  } else if (userDetail?.usageUpdatedAt && new Date(userDetail.usageUpdatedAt) < today) {
+    // 如果最后更新时间早于今日 0点，重置当日计数
+    await db.update(users).set({
+      todayTotalTokens: usage.totalTokens,
+      currentMonthTotalTokens: sql`${users.currentMonthTotalTokens} + ${usage.totalTokens}`,
       usageUpdatedAt: new Date(),
     })
       .where(eq(users.id, userId));
   } else {
-    // 如果是今天内的更新，累加计数
+    // 如果是本日内的更新，累加计数
     await db.update(users).set({
       todayTotalTokens: sql`${users.todayTotalTokens} + ${usage.totalTokens}`,
+      currentMonthTotalTokens: sql`${users.currentMonthTotalTokens} + ${usage.totalTokens}`,
       usageUpdatedAt: new Date(),
     })
       .where(eq(users.id, userId));
