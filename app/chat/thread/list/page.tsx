@@ -20,7 +20,6 @@ const List = () => {
   const [newChatName, setNewChatName] = useState('');
   const [renameChatId, setRenameChatId] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [messageApi, contextHolder] = message.useMessage();
   useEffect(() => {
     const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
     const weekStart = new Date();
@@ -63,7 +62,7 @@ const List = () => {
     const result = await deleteChatInServer(chat_id);
 
     if (result.status === 'success') {
-      messageApi.success(t('deleteSuccess'));
+      message.success(t('deleteSuccess'));
       const chatListresult = await getChatListInServer();
       setChatList(chatListresult.data as ChatType[]);
     }
@@ -80,7 +79,6 @@ const List = () => {
         <InPageCollapsed />
       </div>
       <div className="container max-w-3xl mx-auto p-4">
-        {contextHolder}
         <div className='w-full flex flex-row justify-between items-center border-b border-gray-200 mb-6'>
           <h1 className='text-xl font-bold mb-4 ml-3'>{t('historyChat')}</h1>
         </div>
@@ -90,7 +88,7 @@ const List = () => {
           <ul>
             {todayList.map((chat) => (
               <li key={chat.id} className='flex flex-row items-center justify-between text-sm hover:bg-gray-100 bg-gray-50 mb-3 group px-3 h-12 rounded-lg'>
-                <Link key={chat.id} href={`/chat/${chat.id}`} >
+                <Link key={chat.id} className='text-inherit hover:text-inherit' href={`/chat/${chat.id}`} >
                   <span>{chat.title}</span>
                 </Link>
                 <span className='text-gray-400 inline-block group-hover:hidden'>{chat.createdAt.toLocaleTimeString('zh-CN', { hour: "numeric", minute: "numeric" })}</span>
@@ -120,7 +118,7 @@ const List = () => {
           <ul >
             {weekList.map((chat) => (
               <li key={chat.id} className='flex flex-row items-center justify-between text-sm hover:bg-gray-100 bg-gray-50 mb-3 group px-3 h-12 rounded-lg'>
-                <Link key={chat.id} href={`/chat/${chat.id}`} >
+                <Link key={chat.id} className='text-inherit hover:text-inherit' href={`/chat/${chat.id}`} >
                   <span className=''>{chat.title}</span>
                 </Link>
                 <span className='text-gray-400 inline-block group-hover:hidden'>{chat.createdAt.toLocaleDateString('zh-CN', { month: "short", day: "numeric" })}</span>
@@ -150,7 +148,7 @@ const List = () => {
           <ul>
             {monthList.map((chat) => (
               <li key={chat.id} className='flex flex-row items-center justify-between text-sm hover:bg-gray-100 bg-gray-50 mb-3 group px-3 h-12 rounded-lg'>
-                <Link key={chat.id} href={`/chat/${chat.id}`} >
+                <Link key={chat.id} className='text-inherit hover:text-inherit' href={`/chat/${chat.id}`} >
                   <span className=''>{chat.title}</span>
                 </Link>
                 <span className='text-gray-400 inline-block group-hover:hidden'>{chat.createdAt.toLocaleDateString('zh-CN', { month: "short", day: "numeric" })}</span>
@@ -179,7 +177,7 @@ const List = () => {
           <ul>
             {otherList.map((chat) => (
               <li key={chat.id} className='flex flex-row items-center justify-between text-sm hover:bg-gray-100 bg-gray-50 mb-3 group px-3 h-12 rounded-lg'>
-                <Link key={chat.id} href={`/chat/${chat.id}`} >
+                <Link key={chat.id} className='text-inherit hover:text-inherit' href={`/chat/${chat.id}`} >
                   <span className=''>{chat.title}</span>
                 </Link>
                 <span className='text-gray-400 inline-block group-hover:hidden'>{chat.createdAt.toLocaleDateString('zh-CN', { month: "short", day: "numeric" })}</span>
