@@ -60,7 +60,7 @@ export type Message = {
 export type ResponseContent = {
   id?: number;
   content: string;
-  reasoning_content?: string;
+  reasoningContent?: string;
   inputTokens?: number;
   outputTokens?: number;
   totalTokens?: number;
@@ -166,6 +166,7 @@ export interface MCPTool {
 export interface MCPServer {
   name: string
   description?: string
+  type: 'sse' | 'streamableHttp'
   baseUrl?: string
   isActive: boolean
 }
