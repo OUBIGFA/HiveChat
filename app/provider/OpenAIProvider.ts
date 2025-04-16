@@ -175,7 +175,7 @@ export default class ChatGPTApi implements LLMApi {
               });
               options.onUpdate({
                 content: this.answer,
-                reasoning_content: this.reasoning_content,
+                reasoningContent: this.reasoning_content,
                 mcpTools: this.mcpTools,
               });
               const _mcpTools = this.mcpTools;
@@ -193,7 +193,7 @@ export default class ChatGPTApi implements LLMApi {
               }
               options.onUpdate({
                 content: this.answer,
-                reasoning_content: this.reasoning_content,
+                reasoningContent: this.reasoning_content,
                 mcpTools: _mcpTools,
               });
 
@@ -232,7 +232,7 @@ export default class ChatGPTApi implements LLMApi {
             options.onFinish({
               id: json.metadata.messageId,
               content: this.answer,
-              reasoning_content: this.reasoning_content,
+              reasoningContent: this.reasoning_content,
               inputTokens: this.inputTokens,
               outputTokens: this.outputTokens,
               totalTokens: this.totalTokens,
@@ -241,7 +241,9 @@ export default class ChatGPTApi implements LLMApi {
             syncMcpTools(json.metadata.messageId, this.mcpTools);
 
             this.mcpTools = [];
-
+            this.answer = '';
+            this.reasoning_content = '';
+            Object.keys(final_tool_calls).forEach(key => delete final_tool_calls[Number(key)]);
             if (!this.controller) {
               this.controller = new AbortController();
             }
@@ -281,7 +283,7 @@ export default class ChatGPTApi implements LLMApi {
                     const responseTexts = [resTextRaw];
                     if (res.status === 401) {
                       options.onError?.(new InvalidAPIKeyError('Invalid API Key'));
-                    } else if (res.status === 429) {
+                    } else if (res.status === 459) {
                       options.onError?.(new OverQuotaError('Over Quota'));
                     } else {
                       this.answer = responseTexts.join("\n\n");
@@ -309,7 +311,7 @@ export default class ChatGPTApi implements LLMApi {
             options.onFinish({
               id: json.metadata.messageId,
               content: this.answer,
-              reasoning_content: this.reasoning_content,
+              reasoningContent: this.reasoning_content,
               inputTokens: this.inputTokens,
               outputTokens: this.outputTokens,
               totalTokens: this.totalTokens,
@@ -388,7 +390,7 @@ export default class ChatGPTApi implements LLMApi {
         }
         options.onUpdate({
           content: this.answer,
-          reasoning_content: this.reasoning_content,
+          reasoningContent: this.reasoning_content,
           mcpTools: this.mcpTools,
         });
       } catch (e) {
@@ -444,7 +446,7 @@ export default class ChatGPTApi implements LLMApi {
             const responseTexts = [resTextRaw];
             if (res.status === 401) {
               options.onError?.(new InvalidAPIKeyError('Invalid API Key'));
-            } else if (res.status === 429) {
+            } else if (res.status === 459) {
               options.onError?.(new OverQuotaError('Over Quota'));
             } else {
               this.answer = responseTexts.join("\n\n");
@@ -485,7 +487,7 @@ export default class ChatGPTApi implements LLMApi {
     }
     callback({
       content: this.answer,
-      reasoning_content: this.reasoning_content,
+      reasoningContent: this.reasoning_content,
       mcpTools: this.mcpTools,
     });
     this.answer = '';
