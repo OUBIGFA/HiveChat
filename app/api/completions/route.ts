@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const isUserWithinQuotaResult = await isUserWithinQuota(userId, xProvider, xModel);
     if (!isUserWithinQuotaResult.tokenPassFlag) {
       return new Response(JSON.stringify({ error: 'Out of quota' }), {
-        status: 429,
+        status: 459,
         headers: { 'Content-Type': 'application/json' },
       });
     }
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     });
     // 检查响应是否成功
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.text();
       return new Response(JSON.stringify(errorData), {
         status: response.status,
         headers: { 'Content-Type': 'application/json' },
