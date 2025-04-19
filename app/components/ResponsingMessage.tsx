@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import MarkdownRender from '@/app/components/Markdown';
-import { Avatar } from "antd";
+import { Avatar, Image as AntdImage } from "antd";
 import { ResponseContent } from '@/types/llm';
 import DotsLoading from '@/app/components/loading/DotsLoading';
 import BallsLoading from '@/app/components/loading/BallsLoading';
@@ -12,7 +12,7 @@ import { useTranslations } from 'next-intl';
 // 将搜索状态提示抽离为独立组件
 const SearchStatusIndicator = React.memo(({ status }: { status: "none" | "searching" | "error" | "done" }) => {
   if (status === "none") return null;
-  
+
   const statusMessages = {
     searching: "正在联网搜索...",
     error: "搜索出错，请联系管理员检查搜索引擎配置",
@@ -29,21 +29,26 @@ const SearchStatusIndicator = React.memo(({ status }: { status: "none" | "search
 SearchStatusIndicator.displayName = 'SearchStatusIndicator';
 
 // 将工具调用详情抽离为独立组件
-const ToolInvocationDetails = React.memo(({ 
-  mcp, 
-  isOpen, 
-  onToggle 
-}: { 
-  mcp: any, 
-  isOpen: boolean, 
-  onToggle: () => void 
+const ToolInvocationDetails = React.memo(({
+  mcp,
+  isOpen,
+  toolId,
+  onToggle
+}: {
+  mcp: any,
+  isOpen: boolean,
+  toolId: string,
+  onToggle: (id: string) => void
 }) => {
   return (
     <details open={false} className='flex flex-row bg-gray-100 hover:bg-slate-100 text-gray-800 rounded-md mb-3 border border-gray-200 text-sm'>
       <summary
         className='flex text-xs flex-row items-center rounded-md p-4'
         style={{ display: 'flex' }}
-        onClick={onToggle}
+        onClick={(e) => {
+          e.preventDefault();
+          onToggle(toolId);
+        }}
       >
         <span className='mr-2'>调用 {mcp.tool.serverName} 的工具： {mcp.tool.name}</span>
         {mcp.status === 'done' && mcp.response.isError &&
@@ -52,7 +57,7 @@ const ToolInvocationDetails = React.memo(({
         {mcp.status === 'done' && !mcp.response.isError &&
           <div><CheckCircleOutlined style={{ color: 'green' }} /><span className='ml-1 text-green-700'>已完成</span></div>
         }
-        {mcp.status === 'invoking' && 
+        {mcp.status === 'invoking' &&
           <div>
             <RedoOutlined spin={true} style={{ color: 'green' }} /><span className='ml-1 text-green-700'>执行中</span>
           </div>
@@ -81,11 +86,14 @@ const ResponsingMessage = (props: {
   currentProvider: string,
 }) => {
   const { allProviderListByKey } = useModelListStore();
-  const [isOpen, setIsOpen] = useState(true);
+  const [openToolIds, setOpenToolIds] = useState<Record<string, boolean>>({});
   const t = useTranslations('Chat');
 
-  const handleToggle = useCallback(() => {
-    setIsOpen(prev => !prev);
+  const handleToggle = useCallback((toolId: string) => {
+    setOpenToolIds(prev => ({
+      ...prev,
+      [toolId]: !prev[toolId]
+    }));
   }, []);
 
   const providerAvatar = useMemo(() => {
@@ -99,62 +107,77 @@ const ResponsingMessage = (props: {
     }
     return (
       <div className='bg-blue-500 flex mt-1 text-cyan-50 items-center justify-center rounded-full w-8 h-8'>
-        {allProviderListByKey && allProviderListByKey[props.currentProvider].providerName.charAt(0)}
+        {allProviderListByKey && allProviderListByKey[props.currentProvider]?.providerName?.charAt(0)}
       </div>
     );
   }, [props.currentProvider, allProviderListByKey]);
 
-  const content = useMemo(() => {
-    if (props.responseStatus !== "pending") return null;
+  if (props.responseStatus !== "pending") return null;
 
-    return (
-      <div className="flex container mx-auto px-4 max-w-screen-md w-full flex-col justify-center items-center">
-        <div className='items-start flex max-w-3xl text-justify w-full my-0 pt-0 pb-1 flex-row'>
-          {providerAvatar}
-          <div className='flex flex-col w-0 grow'>
-            <div className='px-3 py-2 ml-2 bg-gray-100 text-gray-600 w-full grow markdown-body answer-content rounded-xl'>
-              <SearchStatusIndicator status={props.searchStatus} />
-              
-              {props.responseMessage.reasoningContent && (
-                <div className='text-sm mb-4'>
-                  <div className='flex text-xs flex-row items-center text-gray-800 bg-gray-100 rounded-md p-2'>
-                    <ThinkingIcon width={16} height={16} style={{ 'fontSize': '10px' }} />
-                    <span className='ml-1'>
-                      {props.responseMessage.content ? t('thought') : t('thinking')}
-                    </span>
-                  </div>
-                  <div className='border-l-2 border-gray-200 px-2 mt-2 leading-5 text-gray-400'>
-                    <MarkdownRender content={props.responseMessage.reasoningContent as string} />
-                  </div>
+  return (
+    <div className="flex container mx-auto px-4 max-w-screen-md w-full flex-col justify-center items-center">
+      <div className='items-start flex max-w-3xl text-justify w-full my-0 pt-0 pb-1 flex-row'>
+        {providerAvatar}
+        <div className='flex flex-col w-0 grow'>
+          <div className='px-3 py-2 ml-2 bg-gray-100 text-gray-600 w-full grow markdown-body answer-content rounded-xl'>
+            <SearchStatusIndicator status={props.searchStatus} />
+
+            {props.responseMessage.reasoningContent && (
+              <div className='text-sm mb-4'>
+                <div className='flex text-xs flex-row items-center text-gray-800 bg-gray-100 rounded-md p-2'>
+                  <ThinkingIcon width={16} height={16} style={{ 'fontSize': '10px' }} />
+                  <span className='ml-1'>
+                    {props.responseMessage.content ? t('thought') : t('thinking')}
+                  </span>
                 </div>
-              )}
-              
-              <MarkdownRender content={props.responseMessage.content} />
-              
-              {props.responseMessage.mcpTools?.map((mcp, index) => (
-                <ToolInvocationDetails
-                  key={index}
-                  mcp={mcp}
-                  isOpen={isOpen}
-                  onToggle={handleToggle}
-                />
-              ))}
-              
-              {(props.responseMessage.content === "" && props.responseMessage.reasoningContent === "") && <DotsLoading />}
-            </div>
-            
-            {(props.responseMessage.content !== "" || props.responseMessage.reasoningContent !== "") && (
-              <div className='px-3'>
-                <BallsLoading />
+                <div className='border-l-2 border-gray-200 px-2 mt-2 leading-5 text-gray-400'>
+                  <MarkdownRender content={props.responseMessage.reasoningContent as string} />
+                </div>
               </div>
             )}
+
+            {typeof props.responseMessage.content === 'string' && <MarkdownRender content={props.responseMessage.content} />
+            }
+
+            {
+              Array.isArray(props.responseMessage.content) && props.responseMessage.content.map((part, index) =>
+                <div key={index}>
+                  {part.type === 'text' && <MarkdownRender content={part.text} />}
+                  {part.type === 'image' && <AntdImage
+                    className='cursor-pointer'
+                    src={part.data}
+                    preview={{ mask: false }}
+                    style={{ maxWidth: '250px', borderRadius: '4px', boxShadow: '3px 4px 7px 0px #dedede' }} />}
+                </div>)
+            }
+
+            {props.responseMessage.mcpTools?.map((mcp, index) => {
+              const toolId = `${mcp.tool.serverName}-${mcp.tool.name}-${index}`;
+              const isOpen = !!openToolIds[toolId];
+              
+              return (
+                <ToolInvocationDetails
+                  key={toolId}
+                  mcp={mcp}
+                  isOpen={isOpen}
+                  toolId={toolId}
+                  onToggle={handleToggle}
+                />
+              );
+            })}
+
+            {(props.responseMessage.content === "" && props.responseMessage.reasoningContent === "") && <DotsLoading />}
           </div>
+
+          {(props.responseMessage.content !== "" || props.responseMessage.reasoningContent !== "") && (
+            <div className='px-3'>
+              <BallsLoading />
+            </div>
+          )}
         </div>
       </div>
-    );
-  }, [props.responseStatus, props.searchStatus, props.responseMessage, providerAvatar, isOpen, handleToggle, t]);
-
-  return content;
+    </div>
+  );
 };
 
 export default React.memo(ResponsingMessage);
