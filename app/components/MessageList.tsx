@@ -88,7 +88,12 @@ export const MessageList = (props: { chat_id: string }) => {
 
       requestAnimationFrame(scrollToBottom);
     }
-  }, [responseMessage, isUserScrolling]);
+  }, [
+    responseMessage.content,
+    responseMessage.reasoningContent,
+    responseMessage.mcpTools?.length,
+    isUserScrolling
+  ]);
 
   const handleScroll = useCallback(() => {
     const chatElement = messageListRef.current;
@@ -181,9 +186,17 @@ export const MessageList = (props: { chat_id: string }) => {
             <Skeleton avatar={{ size: 'default' }} active title={false} paragraph={{ rows: 4, width: ['60%', '60%', '100%', '100%'] }} />
           </div> :
           messageList.map((item, index) => {
+            let showLine = false;
+            if (index < messageList.length - 1 && item.role === 'assistant' && messageList[index + 1]?.role === 'assistant') {
+              showLine = true;
+            }
+            if (index === messageList.length - 1 && item.role === 'assistant' && responseStatus === 'pending') {
+              showLine = true;
+            }
             return (
               <MessageItem
                 key={index}
+                isConsecutive={showLine}
                 role={item.role as 'assistant' | 'user' | 'system'}
                 item={item}
                 index={index}
