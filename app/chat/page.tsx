@@ -13,12 +13,14 @@ import { useLoginModal } from '@/app/contexts/loginModalContext';
 import { addChatInServer } from '@/app/chat/actions/chat';
 import { addMessageInServer } from '@/app/chat/actions/message';
 import { fetchAppSettings } from '@/app/chat/actions/chat';
+import useChatStore from '@/app/store/chat';
 
 const Home = () => {
   const t = useTranslations('Chat');
   const router = useRouter();
   const { status } = useSession();
   const { visible, showLogin, hideLogin } = useLoginModal();
+  const { setWebSearchEnabled } = useChatStore();
   const { modelList, currentModel, setCurrentModelExact, isPending } = useModelListStore();
   const { chatList, setChatList } = useChatListStore();
   const [greetingText, setGreetingText] = useState('');
@@ -89,7 +91,8 @@ const Home = () => {
       }
     }
     setGreetingText(t(getGreeting()));
-  }, [t]);
+    setWebSearchEnabled(false)
+  }, [t, setWebSearchEnabled]);
 
   const newChat = async (
     text: string,
@@ -159,7 +162,7 @@ const Home = () => {
       }
       <div className='flex w-full grow flex-col items-center justify-center h-full'>
         <div className='container max-w-3xl mx-auto -mt-16 relative items-center justify-center'>
-          <h2 className='text-3xl font-bold text-center mb-8'>{greetingText && <>👋 {greetingText}{t('welcomeNotice')}</>}&nbsp;</h2>
+          <h2 className='text-2xl font-bold text-center mb-8'>{greetingText && <>👋 {greetingText}{t('welcomeNotice')}</>}&nbsp;</h2>
           <AdaptiveTextarea model={currentModel} submit={newChat} />
         </div>
       </div>
