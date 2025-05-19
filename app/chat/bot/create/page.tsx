@@ -38,14 +38,15 @@ const CreateBot = () => {
     setIsPending(false);
   };
   return (
-    <div className="container max-w-3xl mx-auto flex flex-col items-center px-16">
+    <div className="container max-w-4xl mx-auto items-center flex flex-col p-4">
       <div className='w-full'>
         <Link href='/chat/bot/discover'>
           <Button type='link' size='small' icon={<LeftOutlined />}>{t('back')}</Button>
         </Link>
       </div>
 
-      <h1 className='text-xl mb-8 mt-4'>{t('createBot')}</h1>
+      <h1 className='text-xl mt-4'>{t('createBot')}</h1>
+      <p className='text-gray-400 mb-8'>创建的智能体仅自己查看和使用</p>
       <EmojiPicker
         currentEmoji={selectedEmoji}
         onEmojiSelect={(emoji) => setSelectedEmoji(emoji)}
