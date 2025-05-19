@@ -54,7 +54,7 @@ const BotInfo = ({ params }: { params: { bot_id: string } }) => {
   };
 
   return (
-    <div className="container max-w-4xl mx-auto pb-8">
+    <div className="container max-w-4xl mx-auto p-4">
       <Link href='/chat/bot/discover'>
         <Button type='link' size='small' icon={<LeftOutlined />}>{t('back')}</Button>
       </Link>
