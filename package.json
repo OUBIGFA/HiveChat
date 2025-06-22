@@ -38,7 +38,7 @@
     "next": "^14.2.25",
     "next-auth": "^5.0.0-beta.25",
     "next-intl": "^3.26.3",
-    "openai": "^4.87.4",
+    "openai": "^5.5.1",
     "postgres": "^3.4.5",
     "react": "^18",
     "react-copy-to-clipboard": "^5.1.0",
