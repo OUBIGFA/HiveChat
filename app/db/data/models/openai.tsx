@@ -1,7 +1,7 @@
 import { LLMModel, LLMModelProvider } from "@/types/llm"
 export const provider: LLMModelProvider = {
   id: 'openai',
-  providerName: 'Open AI',
+  providerName: 'OpenAI',
   apiStyle: 'openai',
 }
 
